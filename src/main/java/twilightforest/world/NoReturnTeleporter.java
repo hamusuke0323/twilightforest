@@ -36,7 +36,7 @@ public class NoReturnTeleporter extends TFTeleporter {
             pos = placePosition(entity, dest, pos.pos);
         }
 
-        return pos == null ? this.isVanilla() ? defaultPortalInfo.apply(dest) : new PortalInfo(entity.position(), Vec3.ZERO, entity.getYRot(), entity.getXRot()) : pos;
+        return pos; //The original method has a null check in place. We don't here as placePosition always returns a position, since no portal is made anyway
     }
 
     private static PortalInfo placePosition(Entity entity, ServerLevel world, Vec3 pos) {
