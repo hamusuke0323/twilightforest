@@ -124,7 +124,7 @@ public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleE
 		if (TFConfig.COMMON_CONFIG.multiplayerFightAdjuster.get().adjustsHealth()) {
 			List<ServerPlayer> nearbyPlayers = accessor.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(this.getHomeRadius() + 10), player -> EntitySelector.NO_CREATIVE_OR_SPECTATOR.and(EntitySelector.ENTITY_STILL_ALIVE).test(player));
 			if (nearbyPlayers.size() > 1 && this.getAttribute(Attributes.MAX_HEALTH) != null) {
-				this.getAttribute(Attributes.MAX_HEALTH).addPermanentModifier(new AttributeModifier(GROUP_HEALTH_UUID, "Multiplayer Bonus Health", this.getHealthBasedOnDifficulty(difficulty.getDifficulty()) * nearbyPlayers.size() - 1, AttributeModifier.Operation.ADDITION));
+				this.getAttribute(Attributes.MAX_HEALTH).addPermanentModifier(new AttributeModifier(GROUP_HEALTH_UUID, "Multiplayer Bonus Health", this.getHealthBasedOnDifficulty(difficulty.getDifficulty()) * (nearbyPlayers.size() - 1), AttributeModifier.Operation.ADDITION));
 			}
 		}
 		return data;
