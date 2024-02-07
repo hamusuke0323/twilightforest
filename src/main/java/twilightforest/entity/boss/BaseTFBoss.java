@@ -117,6 +117,28 @@ public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleE
 		}
 	}
 
+	@Nullable
+	@Override
+	public SpawnGroupData finalizeSpawn(ServerLevelAccessor accessor, DifficultyInstance difficulty, MobSpawnType type, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
+		data = super.finalizeSpawn(accessor, difficulty, type, data, tag);
+		if (TFConfig.COMMON_CONFIG.multiplayerFightAdjuster.get().adjustsHealth()) {
+			List<ServerPlayer> nearbyPlayers = accessor.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(this.getHomeRadius() + 10), player -> EntitySelector.NO_CREATIVE_OR_SPECTATOR.and(EntitySelector.ENTITY_STILL_ALIVE).test(player));
+			if (nearbyPlayers.size() > 1 && this.getAttribute(Attributes.MAX_HEALTH) != null) {
+				this.getAttribute(Attributes.MAX_HEALTH).addPermanentModifier(new AttributeModifier(GROUP_HEALTH_UUID, "Multiplayer Bonus Health", this.getHealthBasedOnDifficulty(difficulty.getDifficulty()) * nearbyPlayers.size() - 1, AttributeModifier.Operation.ADDITION));
+			}
+		}
+		return data;
+	}
+
+	private double getHealthBasedOnDifficulty(Difficulty difficulty) {
+		return switch (difficulty) {
+			default -> 0.0D;
+			case EASY -> 10.0D;
+			case NORMAL -> 20.0D;
+			case HARD -> 30.0D;
+		};
+	}
+
 	@Override
 	public boolean hurt(DamageSource source, float amount) {
 		boolean actuallyHurt = super.hurt(source, amount);

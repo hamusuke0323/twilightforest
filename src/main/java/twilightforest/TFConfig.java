@@ -120,6 +120,18 @@ public class TFConfig {
 							Lower if experiencing low tick rate. Set to 0 to turn all cloud precipitation logic off.""").
 					defineInRange("cloudBlockPrecipitationDistance", 32, 0, Integer.MAX_VALUE);
 
+			multiplayerFightAdjuster = builder.
+					translation(config + "multiplayer_fight_adjuster").
+					worldRestart().
+					comment("""
+							Determines how bosses should adjust to multiplayer fights. There are 4 possible values that can be put here:
+							NONE: doesnt do anything when multiple people participate in a bossfight. Bosses will act the same as they do in singleplayer or solo fights.
+							MORE_LOOT: adds additional drops to a boss' loot table based on how many players participated in the fight. These are fully controlled through the entity's loot table, using the `twilightforest:multiplayer_multiplier` loot function. Note that this function will only do things to entities that use the `MultiplayerFlexibleEnemy` interface in the code (so all TF bosses)
+							MORE_HEALTH: increases the health of each boss by 20 hearts for each player nearby when the fight starts.
+							MORE_LOOT_AND_HEALTH: does both of the above functions for each boss.
+							""").
+					defineEnum("multiplayerFightAdjuster", MultiplayerFightAdjuster.NONE);
+
 			builder.
 					comment("Settings for all things related to the uncrafting table.").
 					push("Uncrafting Table");
@@ -295,6 +307,7 @@ public class TFConfig {
 		public final ModConfigSpec.BooleanValue defaultItemEnchants;
 		public final ModConfigSpec.BooleanValue bossDropChests;
 		public final ModConfigSpec.IntValue cloudBlockPrecipitationDistanceCommon;
+		public final ModConfigSpec.EnumValue<MultiplayerFightAdjuster> multiplayerFightAdjuster;
 
 		public final MagicTrees MAGIC_TREES = new MagicTrees();
 
@@ -522,6 +535,29 @@ public class TFConfig {
 					super.run();
 				}
 			}.start();
+		}
+	}
+
+	public enum MultiplayerFightAdjuster {
+		NONE(false, false),
+		MORE_LOOT(true, false),
+		MORE_HEALTH(false, true),
+		MORE_LOOT_AND_HEALTH(true, true);
+
+		private final boolean moreLoot;
+		private final boolean moreHealth;
+
+		MultiplayerFightAdjuster(boolean loot, boolean health) {
+			this.moreLoot = loot;
+			this.moreHealth = health;
+		}
+
+		public boolean adjustsLootRolls() {
+			return this.moreLoot;
+		}
+
+		public boolean adjustsHealth() {
+			return this.moreHealth;
 		}
 	}
 }
