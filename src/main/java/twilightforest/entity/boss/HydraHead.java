@@ -70,7 +70,7 @@ public class HydraHead extends HydraPart {
 				//save name to main hydra
 				Hydra hydra = this.getParent();
 				if (hydra != null) {
-					for (int i = 0; i < hydra.numHeads; i++) {
+					for (int i = 0; i < Hydra.MAX_HEADS; i++) {
 						if (hydra.hc[i].headEntity == this) {
 							hydra.setHeadNameFor(i, stack.getHoverName().getString());
 						}

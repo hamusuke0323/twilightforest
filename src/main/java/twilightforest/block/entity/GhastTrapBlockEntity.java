@@ -5,6 +5,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -161,12 +162,13 @@ public class GhastTrapBlockEntity extends BlockEntity {
 			// trap nearby ghasts
 			AABB aabb = new AABB(pos.above(16).getCenter(), pos.above(16).offset(1, 1, 1).getCenter()).inflate(6D, 16D, 6D);
 
-			List<Ghast> nearbyGhasts = level.getEntitiesOfClass(Ghast.class, aabb);
+			List<Mob> nearbyGhasts = level.getEntitiesOfClass(Mob.class, aabb, mob -> mob instanceof Ghast || mob instanceof UrGhast);
 
-			for (Ghast ghast : nearbyGhasts) {
+			for (Mob ghast : nearbyGhasts) {
 				//stop boss tantrum
 				if (ghast instanceof UrGhast urghast) {
 					urghast.setInTantrum(false);
+					urghast.setInTrap();
 					ghast.noPhysics = true; // turn this on so we can pull it in close
 
 					// move boss to this point
@@ -190,10 +192,6 @@ public class GhastTrapBlockEntity extends BlockEntity {
 					if (te.rand.nextInt(10) == 0) {
 						ghast.hurt(level.damageSources().generic(), 10);
 					}
-				}
-
-				if (ghast instanceof CarminiteGhastguard) {
-					((CarminiteGhastguard) ghast).setInTrap();
 				}
 
 			}

@@ -45,7 +45,7 @@ public class NewHydraHeadRenderer extends TFPartRenderer<HydraHead, NewHydraHead
 		Hydra hydra = entity.getParent();
 
 		if (hydra != null) {
-			for (int i = 0; i < hydra.numHeads; i++) {
+			for (int i = 0; i < Hydra.MAX_HEADS; i++) {
 				if (hydra.hc[i].headEntity == entity) {
 					return hydra.hc[i];
 				}

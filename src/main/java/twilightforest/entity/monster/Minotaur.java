@@ -31,19 +31,20 @@ import twilightforest.entity.boss.Minoshroom;
 import twilightforest.init.TFDamageTypes;
 import twilightforest.init.TFItems;
 import twilightforest.init.TFSounds;
+import twilightforest.util.EntityUtil;
 
 public class Minotaur extends Monster implements ITFCharger {
 
 	private static final EntityDataAccessor<Boolean> CHARGING = SynchedEntityData.defineId(Minotaur.class, EntityDataSerializers.BOOLEAN);
 
-	public Minotaur(EntityType<? extends Minotaur> type, Level world) {
-		super(type, world);
+	public Minotaur(EntityType<? extends Minotaur> type, Level level) {
+		super(type, level);
 	}
 
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
-		this.goalSelector.addGoal(2, new ChargeAttackGoal(this, 1.5F, this instanceof Minoshroom));
+		this.goalSelector.addGoal(2, new ChargeAttackGoal(this, 1.5F, false));
 		this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.0D, false));
 		this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 1.0D));
 		this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0F));
@@ -94,48 +95,9 @@ public class Minotaur extends Monster implements ITFCharger {
 		this.getEntityData().set(CHARGING, flag);
 	}
 
-	//[VanillaCopy] of Mob.doHurtTarget, edits noted
 	@Override
 	public boolean doHurtTarget(Entity entity) {
-		float f = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
-		float f1 = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
-		if (entity instanceof LivingEntity living) {
-			f += EnchantmentHelper.getDamageBonus(this.getMainHandItem(), living.getMobType());
-			f1 += (float) EnchantmentHelper.getKnockbackBonus(this);
-		}
-
-		int i = EnchantmentHelper.getFireAspect(this);
-		if (i > 0) {
-			entity.setSecondsOnFire(i * 4);
-		}
-
-		//TF: change damage source to minotaur one
-		boolean flag = entity.hurt(TFDamageTypes.getEntityDamageSource(this.level(), TFDamageTypes.AXING, this), f);
-		if (flag) {
-			if (f1 > 0.0F && entity instanceof LivingEntity living) {
-				living.knockback(f1 * 0.5F, Mth.sin(this.getYRot() * Mth.DEG_TO_RAD), -Mth.cos(this.getYRot() * Mth.DEG_TO_RAD));
-				this.setDeltaMovement(this.getDeltaMovement().multiply(0.6D, 1.0D, 0.6D));
-			}
-
-			//TF: check if we're charging. If we are, throw the player upwards and play a sound
-			if (this.isCharging()) {
-				entity.push(this.getDirection().getStepX(), 0.35D, this.getDirection().getStepZ());
-				this.playSound(this.getChargeSound(), 1.0F, 1.0F);
-			}
-
-			if (entity instanceof Player player) {
-				this.maybeDisableShield(player, this.getMainHandItem(), player.isUsingItem() ? player.getUseItem() : ItemStack.EMPTY);
-			}
-
-			this.doEnchantDamageEffects(this, entity);
-			this.setLastHurtMob(entity);
-		}
-
-		return flag;
-	}
-
-	protected SoundEvent getChargeSound() {
-		return TFSounds.MINOTAUR_ATTACK.get();
+		return EntityUtil.properlyApplyCustomDamageSource(this, entity, TFDamageTypes.getEntityDamageSource(this.level(), TFDamageTypes.AXING, this), TFSounds.MINOTAUR_ATTACK.get());
 	}
 
 	@Override

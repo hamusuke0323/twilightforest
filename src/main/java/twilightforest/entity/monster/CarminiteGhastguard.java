@@ -20,17 +20,14 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import twilightforest.entity.EnforcedHomePoint;
 import twilightforest.entity.ai.goal.GhastguardAttackGoal;
 import twilightforest.entity.ai.goal.GhastguardHomedFlightGoal;
 import twilightforest.entity.ai.goal.GhastguardRandomFlyGoal;
-import twilightforest.entity.boss.UrGhast;
 import twilightforest.init.TFSounds;
 
 import java.util.Optional;
@@ -42,15 +39,12 @@ public class CarminiteGhastguard extends Ghast implements EnforcedHomePoint {
 	private static final EntityDataAccessor<Byte> ATTACK_PREVTIMER = SynchedEntityData.defineId(CarminiteGhastguard.class, EntityDataSerializers.BYTE);
 	private static final EntityDataAccessor<Optional<GlobalPos>> HOME_POINT = SynchedEntityData.defineId(CarminiteGhastguard.class, EntityDataSerializers.OPTIONAL_GLOBAL_POS);
 
-	private GhastguardAttackGoal attackAI;
+	private GhastguardAttackGoal attackGoal;
 	protected float wanderFactor;
-	private int inTrapCounter;
 
-	public CarminiteGhastguard(EntityType<? extends CarminiteGhastguard> type, Level world) {
-		super(type, world);
-
+	public CarminiteGhastguard(EntityType<? extends CarminiteGhastguard> type, Level level) {
+		super(type, level);
 		this.wanderFactor = 16.0F;
-		this.inTrapCounter = 0;
 	}
 
 	@Override
@@ -65,18 +59,14 @@ public class CarminiteGhastguard extends Ghast implements EnforcedHomePoint {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(5, new GhastguardHomedFlightGoal(this));
-		if (!(this instanceof UrGhast)) this.goalSelector.addGoal(5, new GhastguardRandomFlyGoal(this));
+		this.goalSelector.addGoal(5, new GhastguardRandomFlyGoal(this));
 		this.goalSelector.addGoal(7, new Ghast.GhastLookGoal(this));
-		this.goalSelector.addGoal(7, attackAI = new GhastguardAttackGoal(this));
+		this.goalSelector.addGoal(7, this.attackGoal = new GhastguardAttackGoal(this));
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
 	}
 
 	public float getWanderFactor() {
 		return this.wanderFactor;
-	}
-
-	public void setInTrap() {
-		this.inTrapCounter = 10;
 	}
 
 	public static AttributeSupplier.Builder registerAttributes() {
@@ -134,17 +124,11 @@ public class CarminiteGhastguard extends Ghast implements EnforcedHomePoint {
 
 	@Override
 	protected void customServerAiStep() {
-
-		if (this.inTrapCounter > 0) {
-			this.inTrapCounter--;
-			this.setTarget(null);
-		}
-
-		int status = getTarget() != null && this.shouldAttack(this.getTarget()) ? 1 : 0;
+		int status = this.getTarget() != null && this.shouldAttack(this.getTarget()) ? 1 : 0;
 
 		this.getEntityData().set(ATTACK_STATUS, (byte) status);
-		this.getEntityData().set(ATTACK_TIMER, (byte) attackAI.attackTimer);
-		this.getEntityData().set(ATTACK_PREVTIMER, (byte) attackAI.prevAttackTimer);
+		this.getEntityData().set(ATTACK_TIMER, (byte) attackGoal.attackTimer);
+		this.getEntityData().set(ATTACK_PREVTIMER, (byte) attackGoal.prevAttackTimer);
 	}
 
 	public int getAttackStatus() {
@@ -174,21 +158,6 @@ public class CarminiteGhastguard extends Ghast implements EnforcedHomePoint {
 	@Override
 	protected boolean canRide(Entity entity) {
 		return false;
-	}
-
-	public void spitFireball() {
-		Vec3 vec3d = this.getViewVector(1.0F);
-		double d2 = this.getTarget().getX() - (this.getX() + vec3d.x() * 4.0D);
-		double d3 = this.getTarget().getBoundingBox().minY + this.getTarget().getBbHeight() / 2.0F - (0.5D + this.getY() + this.getBbHeight() / 2.0F);
-		double d4 = this.getTarget().getZ() - (this.getZ() + vec3d.z() * 4.0D);
-		LargeFireball entitylargefireball = new LargeFireball(this.level(), this, d2, d3, d4, this.getExplosionPower());
-		entitylargefireball.setPos(this.getX() + vec3d.x() * 4.0D, this.getY() + this.getBbHeight() / 2.0F + 0.5D, this.getZ() + vec3d.z() * 4.0D);
-		this.level().addFreshEntity(entitylargefireball);
-
-		// when we attack, there is a 1-in-6 chance we decide to stop attacking
-		if (this.getRandom().nextInt(6) == 0) {
-			this.setTarget(null);
-		}
 	}
 
 	public static boolean ghastSpawnHandler(EntityType<? extends CarminiteGhastguard> entityType, LevelAccessor accessor, MobSpawnType type, BlockPos pos, RandomSource random) {

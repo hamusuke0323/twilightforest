@@ -51,8 +51,8 @@ public class BlockChainGoblin extends Monster {
 
 	private final MultipartGenericsAreDumb[] partsArray;
 
-	public BlockChainGoblin(EntityType<? extends BlockChainGoblin> type, Level world) {
-		super(type, world);
+	public BlockChainGoblin(EntityType<? extends BlockChainGoblin> type, Level level) {
+		super(type, level);
 		this.partsArray = new MultipartGenericsAreDumb[]{this.block};
 	}
 
@@ -142,7 +142,7 @@ public class BlockChainGoblin extends Monster {
 
 	@Override
 	public boolean doHurtTarget(Entity entity) {
-		return EntityUtil.properlyApplyCustomDamageSource(this, entity, TFDamageTypes.getIndirectEntityDamageSource(this.level(), TFDamageTypes.SPIKED, this, this.block));
+		return EntityUtil.properlyApplyCustomDamageSource(this, entity, TFDamageTypes.getIndirectEntityDamageSource(this.level(), TFDamageTypes.SPIKED, this, this.block), null);
 	}
 
 	@Override

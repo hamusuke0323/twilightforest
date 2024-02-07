@@ -137,27 +137,6 @@ public class TFLootTables {
 		}
 	}
 
-	@Deprecated //move to using IBossLootBuffer.saveDropsIntoBoss instead
-	public static void entityDropsIntoContainer(LivingEntity entity, DamageSource source, BlockState blockContaining, BlockPos placement) {
-		if (entity.level() instanceof ServerLevel serverLevel && TFConfig.COMMON_CONFIG.bossDropChests.get()
-				&& serverLevel.setBlock(placement, blockContaining, DEFAULT_PLACE_FLAG)
-				&& serverLevel.getBlockEntity(placement) instanceof Container container) {
-			LootTable table = serverLevel.getServer().getLootData().getLootTable(entity.getLootTable());
-			LootParams params = createLootParams(entity, true, source).create(LootContextParamSets.ENTITY);
-			ObjectArrayList<ItemStack> stacks = table.getRandomItems(params);
-			table.fill(container, params, entity.getLootTableSeed());
-			//if our loot stack size is bigger than the chest, drop everything else outside of it. Dont want to lose any loot now do we?
-			if (stacks.size() > 27) {
-				for (ItemStack stack : stacks.subList(28, stacks.size())) {
-					ItemEntity item = new ItemEntity(serverLevel, placement.above().getX(), placement.above().getY(), placement.above().getZ(), stack);
-					item.setExtendedLifetime();
-					item.setNoPickUpDelay();
-					serverLevel.addFreshEntity(item);
-				}
-			}
-		}
-	}
-
 	public static LootParams.Builder createLootParams(LivingEntity entity, boolean checkPlayerKill, DamageSource source) {
 		LootParams.Builder lootcontext$builder = (new LootParams.Builder((ServerLevel)entity.level())).withParameter(LootContextParams.THIS_ENTITY, entity).withParameter(LootContextParams.ORIGIN, entity.position()).withParameter(LootContextParams.DAMAGE_SOURCE, source).withOptionalParameter(LootContextParams.KILLER_ENTITY, source.getEntity()).withOptionalParameter(LootContextParams.DIRECT_KILLER_ENTITY, source.getDirectEntity());
 		if (checkPlayerKill && entity.getKillCredit() instanceof Player player) {

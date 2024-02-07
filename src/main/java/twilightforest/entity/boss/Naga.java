@@ -1,15 +1,13 @@
 package twilightforest.entity.boss;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.GlobalPos;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,6 +17,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
@@ -34,24 +33,20 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.neoforge.entity.PartEntity;
 import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
-import twilightforest.TFConfig;
-import twilightforest.init.TFAdvancements;
-import twilightforest.entity.EnforcedHomePoint;
 import twilightforest.entity.TFPart;
 import twilightforest.entity.ai.control.NagaMoveControl;
 import twilightforest.entity.ai.goal.AttemptToGoHomeGoal;
@@ -61,15 +56,14 @@ import twilightforest.entity.ai.goal.SimplifiedAttackGoal;
 import twilightforest.init.TFBlocks;
 import twilightforest.init.TFSounds;
 import twilightforest.init.TFStructures;
-import twilightforest.loot.TFLootTables;
-import twilightforest.network.ParticlePacket;
 import twilightforest.network.MovePlayerPacket;
+import twilightforest.network.ParticlePacket;
 import twilightforest.util.EntityUtil;
-import twilightforest.util.LandmarkUtil;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.UUID;
 
-public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer {
+public class Naga extends BaseTFBoss {
 
 	private static final int TICKS_BEFORE_HEALING = 600;
 	private static final int MAX_SEGMENTS = 12;
@@ -80,19 +74,16 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	private int currentSegmentCount = 0; // not including head
 	private final float healthPerSegment;
 	private final NagaSegment[] bodySegments = new NagaSegment[MAX_SEGMENTS];
-	private NagaMovementPattern movementAI;
+	private NagaMovementPattern movementPattern;
 	private int ticksSinceDamaged = 0;
 	private int damageDuringCurrentStun = 0;
 	public float stunlessRedOverlayProgress = 0.0F;
-	private final List<ServerPlayer> hurtBy = new ArrayList<>();
-	private final NonNullList<ItemStack> dyingInventory = NonNullList.withSize(27, ItemStack.EMPTY);
 
-	private final ServerBossEvent bossInfo = new ServerBossEvent(getDisplayName(), BossEvent.BossBarColor.GREEN, BossEvent.BossBarOverlay.NOTCHED_10);
+	private final ServerBossEvent bossInfo = new ServerBossEvent(this.getDisplayName(), BossEvent.BossBarColor.GREEN, BossEvent.BossBarOverlay.NOTCHED_10);
 	private static final UUID MOVEMENT_SPEED_UUID = UUID.fromString("1fe84ad2-3b63-4922-ade7-546aae84a9e1");
 	private static final EntityDataAccessor<Boolean> DATA_DAZE = SynchedEntityData.defineId(Naga.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> DATA_CHARGE = SynchedEntityData.defineId(Naga.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> DATA_STUNLESS = SynchedEntityData.defineId(Naga.class, EntityDataSerializers.BOOLEAN);
-	private static final EntityDataAccessor<Optional<GlobalPos>> HOME_POINT = SynchedEntityData.defineId(Naga.class, EntityDataSerializers.OPTIONAL_GLOBAL_POS);
 
 	public Naga(EntityType<? extends Naga> type, Level level) {
 		super(type, level);
@@ -104,6 +95,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 		}
 
 		this.healthPerSegment = this.getMaxHealth() / 10;
+		this.moveControl = new NagaMoveControl(this);
 	}
 
 	@Override
@@ -112,7 +104,6 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 		this.getEntityData().define(DATA_DAZE, false);
 		this.getEntityData().define(DATA_CHARGE, false);
 		this.getEntityData().define(DATA_STUNLESS, false);
-		this.getEntityData().define(HOME_POINT, Optional.empty());
 	}
 
 	public boolean isDazed() {
@@ -142,8 +133,8 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 		this.getEntityData().set(DATA_STUNLESS, charge);
 	}
 
-	public NagaMovementPattern getMovementAI() {
-		return this.movementAI;
+	public NagaMovementPattern getMovementPattern() {
+		return this.movementPattern;
 	}
 
 	@Override
@@ -151,7 +142,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 		this.goalSelector.addGoal(1, new FloatGoal(this));
 		this.goalSelector.addGoal(2, new SimplifiedAttackGoal(this));
 		this.goalSelector.addGoal(3, new NagaSmashGoal(this));
-		this.goalSelector.addGoal(4, this.movementAI = new NagaMovementPattern(this));
+		this.goalSelector.addGoal(4, this.movementPattern = new NagaMovementPattern(this));
 		this.goalSelector.addGoal(5, new AttemptToGoHomeGoal<>(this, 1.0D) {
 			@Override
 			public void start() {
@@ -178,8 +169,6 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 				return super.canUse() && Naga.this.areSelfAndTargetInHome(Naga.this.getTarget());
 			}
 		});
-
-		this.moveControl = new NagaMoveControl(this);
 	}
 
 	public static AttributeSupplier.Builder registerAttributes() {
@@ -323,7 +312,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 		}
 
 		if (this.damageDuringCurrentStun > 15) {
-			this.getMovementAI().forceCircle();
+			this.getMovementPattern().forceCircle();
 			this.damageDuringCurrentStun = 0;
 		}
 
@@ -369,9 +358,6 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 			if (this.isDazed()) {
 				this.damageDuringCurrentStun += amount;
 			}
-			if (source.getEntity() instanceof ServerPlayer player && !this.hurtBy.contains(player)) {
-				this.hurtBy.add(player);
-			}
 			return true;
 		} else {
 			return false;
@@ -381,7 +367,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	@Override
 	public boolean doHurtTarget(Entity toAttack) {
 		if (toAttack instanceof LivingEntity living && living.isBlocking()) {
-			if (this.getMovementAI().getState() == NagaMovementPattern.MovementState.CHARGE) {
+			if (this.getMovementPattern().getState() == NagaMovementPattern.MovementState.CHARGE) {
 				Vec3 motion = this.getDeltaMovement();
 				toAttack.push(motion.x() * 1.5D, 0.5D, motion.z() * 1.5D);
 				this.push(motion.x() * -1.25D, 0.5D, motion.z() * -1.25D);
@@ -391,9 +377,9 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 				}
 				this.hurt(this.damageSources().generic(), 2.0F);
 				this.level().playSound(null, toAttack.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0F, 0.8F + this.level().getRandom().nextFloat() * 0.4F);
-				this.getMovementAI().doDaze();
+				this.getMovementPattern().doDaze();
 				return false;
-			} else if (this.getMovementAI().getState() == NagaMovementPattern.MovementState.STUNLESS_CHARGE) {
+			} else if (this.getMovementPattern().getState() == NagaMovementPattern.MovementState.STUNLESS_CHARGE) {
 				if (toAttack instanceof ServerPlayer player) {
 					player.getUseItem().hurtAndBreak(10, player, user -> user.broadcastBreakEvent(player.getUsedItemHand()));
 					player.getCooldowns().addCooldown(player.getUseItem().getItem(), 200);
@@ -402,7 +388,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 				}
 				living.hurt(this.damageSources().mobAttack(this), 4.0F);
 				this.playSound(SoundEvents.FOX_BITE, 2.0F, 0.5F);
-				this.getMovementAI().doCircle();
+				this.getMovementPattern().doCircle();
 				return false;
 			}
 		}
@@ -429,22 +415,7 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	}
 
 	@Override
-	public void checkDespawn() {
-		if (this.level().getDifficulty() == Difficulty.PEACEFUL) {
-			if (this.isRestrictionPointValid(this.level().dimension()) && this.level().isLoaded(this.getRestrictionPoint().pos())) {
-				this.level().setBlockAndUpdate(this.getRestrictionPoint().pos(), TFBlocks.NAGA_BOSS_SPAWNER.get().defaultBlockState());
-			}
-			this.discard();
-		} else {
-			super.checkDespawn();
-		}
-	}
-
-	@Override
 	public void remove(RemovalReason reason) {
-		if (reason.equals(RemovalReason.KILLED) && this.level() instanceof ServerLevel serverLevel) {
-			IBossLootBuffer.depositDropsIntoChest(this, this.getRandom().nextBoolean() ? TFBlocks.TWILIGHT_OAK_CHEST.get().defaultBlockState() : TFBlocks.CANOPY_CHEST.get().defaultBlockState(), EntityUtil.bossChestLocation(this), serverLevel);
-		}
 		super.remove(reason);
 		if (this.level() instanceof ServerLevel) {
 			for (NagaSegment seg : this.bodySegments) {
@@ -543,39 +514,6 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	}
 
 	@Override
-	public void addAdditionalSaveData(CompoundTag compound) {
-		this.saveHomePointToNbt(compound);
-		this.addDeathItemsSaveData(compound);
-		super.addAdditionalSaveData(compound);
-	}
-
-	@Override
-	public void readAdditionalSaveData(CompoundTag compound) {
-		super.readAdditionalSaveData(compound);
-		this.readDeathItemsSaveData(compound);
-		this.loadHomePointFromNbt(compound);
-		if (this.hasCustomName()) {
-			this.bossInfo.setName(this.getDisplayName());
-		}
-	}
-
-	@Override
-	public void die(DamageSource cause) {
-		super.die(cause);
-		// mark the courtyard as defeated
-		if (this.level() instanceof ServerLevel serverLevel) {
-			this.bossInfo.setProgress(0.0F);
-			this.setDazed(false);
-			LandmarkUtil.markStructureConquered(this.level(), this, TFStructures.NAGA_COURTYARD, true);
-			for (ServerPlayer player : this.hurtBy) {
-				TFAdvancements.HURT_BOSS.get().trigger(player, this);
-			}
-
-			IBossLootBuffer.saveDropsIntoBoss(this, TFLootTables.createLootParams(this, true, cause).create(LootContextParamSets.ENTITY), serverLevel);
-		}
-	}
-
-	@Override
 	protected void tickDeath() {
 		++this.deathTime;
 		if (!this.level().isClientSide() && !this.isRemoved()) {
@@ -651,11 +589,6 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	}
 
 	@Override
-	protected boolean shouldDropLoot() {
-		return !TFConfig.COMMON_CONFIG.bossDropChests.get();
-	}
-
-	@Override
 	public boolean isMultipartEntity() {
 		return true;
 	}
@@ -673,70 +606,32 @@ public class Naga extends Monster implements EnforcedHomePoint, IBossLootBuffer 
 	}
 
 	@Override
-	public void startSeenByPlayer(ServerPlayer player) {
-		super.startSeenByPlayer(player);
-		this.bossInfo.addPlayer(player);
-	}
-
-	@Override
-	public void stopSeenByPlayer(ServerPlayer player) {
-		super.stopSeenByPlayer(player);
-		this.bossInfo.removePlayer(player);
-	}
-
-	@Override
-	public void setCustomName(@Nullable Component name) {
-		super.setCustomName(name);
-		this.bossInfo.setName(this.getDisplayName());
-	}
-
-	@Override
 	public float getStepHeight() {
 		return 2.0F;
 	}
 
 	@Override
-	public boolean removeWhenFarAway(double distance) {
-		return false;
-	}
-
-	@Override
-	protected boolean canRide(Entity entity) {
-		return false;
-	}
-
-	@Override
-	public boolean isPushedByFluid(FluidType type) {
-		return false;
-	}
-
-	@Override
-	protected float getWaterSlowDown() {
-		return 1.0F;
-	}
-
-	@Override
-	public boolean canChangeDimensions() {
-		return false;
-	}
-
-	@Override
-	public NonNullList<ItemStack> getItemStacks() {
-		return this.dyingInventory;
-	}
-
-	@Override
-	public @Nullable GlobalPos getRestrictionPoint() {
-		return this.getEntityData().get(HOME_POINT).orElse(null);
-	}
-
-	@Override
-	public void setRestrictionPoint(@Nullable GlobalPos pos) {
-		this.getEntityData().set(HOME_POINT, Optional.ofNullable(pos));
-	}
-
-	@Override
 	public int getHomeRadius() {
 		return 40;
+	}
+
+	@Override
+	public ResourceKey<Structure> getHomeStructure() {
+		return TFStructures.NAGA_COURTYARD;
+	}
+
+	@Override
+	public ServerBossEvent getBossBar() {
+		return this.bossInfo;
+	}
+
+	@Override
+	public Block getDeathContainer(RandomSource random) {
+		return random.nextBoolean() ? TFBlocks.TWILIGHT_OAK_CHEST.get() : TFBlocks.CANOPY_CHEST.get();
+	}
+
+	@Override
+	public Block getBossSpawner() {
+		return TFBlocks.NAGA_BOSS_SPAWNER.get();
 	}
 }
