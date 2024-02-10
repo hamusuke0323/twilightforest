@@ -62,12 +62,18 @@ public class TFTeleporter implements ITeleporter {
 
 		if ((pos = placeInExistingPortal(cache, dest, entity, destPos)) == null) {
 			TwilightForestMod.LOGGER.debug("Did not find existing portal, making a new one.");
-			pos = moveToSafeCoords(dest, entity, destPos);
-			this.makePortal(cache, entity, dest, pos.pos);
-			pos = placeInExistingPortal(cache, dest, entity, BlockPos.containing(pos.pos));
+			pos = createPosition(dest, entity, destPos, cache);
 		}
 
 		return pos == null ? ITeleporter.super.getPortalInfo(entity, dest, defaultPortalInfo) : pos;
+	}
+
+	@Nullable
+	protected PortalInfo createPosition(ServerLevel dest, Entity entity, BlockPos destPos, TeleporterCache cache) {
+		PortalInfo info = moveToSafeCoords(dest, entity, destPos);
+		this.makePortal(cache, entity, dest, info.pos);
+		info = placeInExistingPortal(cache, dest, entity, BlockPos.containing(info.pos));
+		return info;
 	}
 
 	@Nullable

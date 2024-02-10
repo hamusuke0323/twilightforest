@@ -18,25 +18,11 @@ public class NoReturnTeleporter extends TFTeleporter {
         super(false);
     }
 
-    @Nullable
     @Override
-    public PortalInfo getPortalInfo(Entity entity, ServerLevel dest, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-        PortalInfo pos;
-        TeleporterCache cache = TeleporterCache.get(dest);
-
-        // Scale the coords based on the dimension type coordinate_scale
-        ServerLevel tfDim = dest.getServer().getLevel(TFDimension.DIMENSION_KEY);
-        double scale = tfDim == null ? 0.125D : tfDim.dimensionType().coordinateScale();
-        scale = dest.dimension().equals(TFDimension.DIMENSION_KEY) ? 1F / scale : scale;
-        BlockPos destPos = dest.getWorldBorder().clampToBounds(entity.blockPosition().getX() * scale, entity.blockPosition().getY(), entity.blockPosition().getZ() * scale);
-
-        if ((pos = placeInExistingPortal(cache, dest, entity, destPos)) == null) { //This isn't necessary, but whatever, might as well be safe
-            TwilightForestMod.LOGGER.debug("Did not find existing portal, making a new one.");
-            pos = moveToSafeCoords(dest, entity, destPos);
-            pos = placePosition(entity, dest, pos.pos);
-        }
-
-        return pos; //The original method has a null check in place. We don't here as placePosition always returns a position, since no portal is made anyway
+    protected @Nullable PortalInfo createPosition(ServerLevel dest, Entity entity, BlockPos destPos, TeleporterCache cache) {
+        PortalInfo info = moveToSafeCoords(dest, entity, destPos);
+        info = placePosition(entity, dest, info.pos);
+        return info;
     }
 
     private static PortalInfo placePosition(Entity entity, ServerLevel world, Vec3 pos) {
@@ -73,10 +59,5 @@ public class NoReturnTeleporter extends TFTeleporter {
         double yFactor = getYFactor(world);
         // modified copy of base Teleporter method:
         return makePortalInfo(entity, entity.getX(), (entity.getY() * yFactor) - 1.0, entity.getZ());
-    }
-
-    @Override
-    protected BlockPos makePortalAt(Level world, BlockPos pos) {
-        return pos;
     }
 }
