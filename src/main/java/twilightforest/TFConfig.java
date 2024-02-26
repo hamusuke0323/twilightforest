@@ -126,7 +126,7 @@ public class TFConfig {
 					comment("""
 							Determines how bosses should adjust to multiplayer fights. There are 4 possible values that can be put here:
 							NONE: doesnt do anything when multiple people participate in a bossfight. Bosses will act the same as they do in singleplayer or solo fights.
-							MORE_LOOT: adds additional drops to a boss' loot table based on how many players participated in the fight. These are fully controlled through the entity's loot table, using the `twilightforest:multiplayer_multiplier` loot function. Note that this function will only do things to entities that use the `MultiplayerFlexibleEnemy` interface in the code (so all TF bosses)
+							MORE_LOOT: adds additional drops to a boss' loot table based on how many players participated in the fight. These are fully controlled through the entity's loot table, using the `twilightforest:multiplayer_multiplier` loot function. Note that this function will only do things to entities that are included in the `twilightforest:multiplayer_inclusive_entities` tag.
 							MORE_HEALTH: increases the health of each boss by 20 hearts for each player nearby when the fight starts.
 							MORE_LOOT_AND_HEALTH: does both of the above functions for each boss.
 							""").
