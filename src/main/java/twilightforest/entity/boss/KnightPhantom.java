@@ -210,8 +210,6 @@ public class KnightPhantom extends BaseTFBoss {
 				// mark the stronghold as defeated
 				LandmarkUtil.markStructureConquered(this.level(), this, TFStructures.KNIGHT_STRONGHOLD, true);
 
-				this.grantGroupAdvancement(this);
-
 				for (ServerPlayer player : this.level().getEntitiesOfClass(ServerPlayer.class, new AABB(treasurePos).inflate(32.0D))) {
 					TFAdvancements.HURT_BOSS.get().trigger(player, this);
 				}

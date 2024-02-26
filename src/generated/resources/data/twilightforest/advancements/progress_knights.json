@@ -34,20 +34,6 @@
         ]
       },
       "trigger": "minecraft:inventory_changed"
-    },
-    "was_in_fight": {
-      "conditions": {
-        "hurt_entity": [
-          {
-            "condition": "minecraft:entity_properties",
-            "entity": "this",
-            "predicate": {
-              "type": "twilightforest:knight_phantom"
-            }
-          }
-        ]
-      },
-      "trigger": "twilightforest:hurt_boss"
     }
   },
   "display": {
@@ -65,8 +51,7 @@
   "requirements": [
     [
       "all_knights",
-      "trophy",
-      "was_in_fight"
+      "trophy"
     ],
     [
       "previous_progression"

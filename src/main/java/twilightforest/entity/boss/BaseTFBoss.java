@@ -32,21 +32,17 @@ import net.neoforged.neoforge.fluids.FluidType;
 import org.jetbrains.annotations.Nullable;
 import twilightforest.TFConfig;
 import twilightforest.entity.EnforcedHomePoint;
-import twilightforest.entity.MultiplayerFlexibleEnemy;
 import twilightforest.loot.TFLootTables;
 import twilightforest.util.EntityUtil;
 import twilightforest.util.LandmarkUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleEnemy, EnforcedHomePoint {
+public abstract class BaseTFBoss extends Monster implements IBossLootBuffer, EnforcedHomePoint {
 	private static final EntityDataAccessor<Optional<GlobalPos>> HOME_POINT = SynchedEntityData.defineId(BaseTFBoss.class, EntityDataSerializers.OPTIONAL_GLOBAL_POS);
-	private final List<ServerPlayer> hurtBy = new ArrayList<>();
 	private final NonNullList<ItemStack> dyingInventory = NonNullList.withSize(27, ItemStack.EMPTY);
-	private static final UUID GROUP_HEALTH_UUID = UUID.fromString("7fe91103-8bbf-4010-9c0a-67cd866b5185");
 
 	protected BaseTFBoss(EntityType<? extends Monster> type, Level level) {
 		super(type, level);
@@ -117,37 +113,6 @@ public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleE
 		}
 	}
 
-	@Nullable
-	@Override
-	public SpawnGroupData finalizeSpawn(ServerLevelAccessor accessor, DifficultyInstance difficulty, MobSpawnType type, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
-		data = super.finalizeSpawn(accessor, difficulty, type, data, tag);
-		if (TFConfig.COMMON_CONFIG.multiplayerFightAdjuster.get().adjustsHealth()) {
-			List<ServerPlayer> nearbyPlayers = accessor.getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(this.getHomeRadius() + 10), player -> EntitySelector.NO_CREATIVE_OR_SPECTATOR.and(EntitySelector.ENTITY_STILL_ALIVE).test(player));
-			if (nearbyPlayers.size() > 1 && this.getAttribute(Attributes.MAX_HEALTH) != null) {
-				this.getAttribute(Attributes.MAX_HEALTH).addPermanentModifier(new AttributeModifier(GROUP_HEALTH_UUID, "Multiplayer Bonus Health", this.getHealthBasedOnDifficulty(difficulty.getDifficulty()) * (nearbyPlayers.size() - 1), AttributeModifier.Operation.ADDITION));
-			}
-		}
-		return data;
-	}
-
-	private double getHealthBasedOnDifficulty(Difficulty difficulty) {
-		return switch (difficulty) {
-			default -> 0.0D;
-			case EASY -> 10.0D;
-			case NORMAL -> 20.0D;
-			case HARD -> 30.0D;
-		};
-	}
-
-	@Override
-	public boolean hurt(DamageSource source, float amount) {
-		boolean actuallyHurt = super.hurt(source, amount);
-		if (actuallyHurt && source.getEntity() != null) {
-			this.maybeAddQualifiedPlayer(source.getEntity());
-		}
-		return actuallyHurt;
-	}
-
 	@Override
 	public void lavaHurt() {
 		if (!this.fireImmune()) {
@@ -168,7 +133,6 @@ public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleE
 				this.getBossBar().setProgress(0.0F);
 				IBossLootBuffer.saveDropsIntoBoss(this, TFLootTables.createLootParams(this, true, cause).create(LootContextParamSets.ENTITY), server);
 				LandmarkUtil.markStructureConquered(this.level(), this, this.getHomeStructure(), true);
-				this.grantGroupAdvancement(this);
 			}
 		}
 	}
@@ -241,10 +205,5 @@ public abstract class BaseTFBoss extends Monster implements MultiplayerFlexibleE
 	@Override
 	public NonNullList<ItemStack> getItemStacks() {
 		return this.dyingInventory;
-	}
-
-	@Override
-	public List<ServerPlayer> getQualifiedPlayers() {
-		return this.hurtBy;
 	}
 }

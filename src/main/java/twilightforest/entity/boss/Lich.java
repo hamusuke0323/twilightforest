@@ -287,9 +287,6 @@ public class Lich extends BaseTFBoss {
 
 		if (this.isShadowClone() && !src.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			this.playSound(TFSounds.LICH_CLONE_HURT.get(), 1.0F, this.getVoicePitch() * 2.0F);
-			if (this.getMaster() != null && src.getEntity() != null) {
-				this.getMaster().maybeAddQualifiedPlayer(src.getEntity());
-			}
 			return false;
 		}
 

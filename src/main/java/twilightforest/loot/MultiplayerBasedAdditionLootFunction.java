@@ -13,7 +13,7 @@ import net.minecraft.world.level.storage.loot.providers.number.NumberProvider;
 import net.minecraft.world.level.storage.loot.providers.number.NumberProviders;
 import twilightforest.TFConfig;
 import twilightforest.TwilightForestMod;
-import twilightforest.entity.MultiplayerFlexibleEnemy;
+import twilightforest.init.TFDataAttachments;
 import twilightforest.init.TFLoot;
 
 import java.util.List;
@@ -44,11 +44,14 @@ public class MultiplayerBasedAdditionLootFunction extends LootItemConditionalFun
 	@Override
 	protected ItemStack run(ItemStack stack, LootContext context) {
 		if (TFConfig.COMMON_CONFIG.multiplayerFightAdjuster.get().adjustsLootRolls()) {
-			if (context.hasParam(LootContextParams.THIS_ENTITY) && context.getParam(LootContextParams.THIS_ENTITY) instanceof MultiplayerFlexibleEnemy enemy && enemy.getQualifiedPlayers().size() > 1) {
-				int participatingPlayers = enemy.getQualifiedPlayers().size() - 1;
-				int extraItems = this.value.getInt(context) * participatingPlayers;
-				stack.setCount(Mth.clamp(stack.getCount() + extraItems, 0, stack.getMaxStackSize()));
-				TwilightForestMod.LOGGER.debug("{} extra players participated in a fight against {}, dropping {} extra {} for a total of {}.", participatingPlayers, context.getParam(LootContextParams.THIS_ENTITY).getType().getDescription().getString(), extraItems, stack.getItem().getDescription().getString(), stack.getCount());
+			if (context.hasParam(LootContextParams.THIS_ENTITY) && context.getParam(LootContextParams.THIS_ENTITY).hasData(TFDataAttachments.MULTIPLAYER_FIGHT)) {
+				int qualifiedPlayers = context.getParam(LootContextParams.THIS_ENTITY).getData(TFDataAttachments.MULTIPLAYER_FIGHT).getQualifiedPlayers().size();
+				if (qualifiedPlayers > 1) {
+					int participatingPlayers = qualifiedPlayers - 1;
+					int extraItems = this.value.getInt(context) * participatingPlayers;
+					stack.setCount(Mth.clamp(stack.getCount() + extraItems, 0, stack.getMaxStackSize()));
+					TwilightForestMod.LOGGER.debug("{} extra players participated in a fight against {}, dropping {} extra {} for a total of {}.", participatingPlayers, context.getParam(LootContextParams.THIS_ENTITY).getType().getDescription().getString(), extraItems, stack.getItem().getDescription().getString(), stack.getCount());
+				}
 			}
 		}
 		return stack;

@@ -1,4 +1,4 @@
-// 1.20.4	2023-12-30T22:48:43.1349624	Advancements
+// 1.20.4	2024-02-25T16:36:47.7953979	Advancements
 fbdaa22b092d4f6404ebb53e8b4c736256d05344 data/twilightforest/advancements/arborist.json
 b2eb14853e939d5b1d5d541edbf1bcaa539d4e53 data/twilightforest/advancements/arctic_armor_dyed.json
 fb3dca17b827f1349b7dadea465313db9274c96c data/twilightforest/advancements/beanstalk.json
@@ -26,7 +26,7 @@ ff8362c491d702c238d60854c6a843acc9bf31d2 data/twilightforest/advancements/naga_a
 759c91760d8db3b3a11bde78791de1d7950f9875 data/twilightforest/advancements/progression_end.json
 2260d07ec9640f45c64c5faf25eb96180745f51c data/twilightforest/advancements/progress_glacier.json
 da4bce71800ce822988fc95c0b77b1e12d430b57 data/twilightforest/advancements/progress_hydra.json
-5f958cc1e49412d149a9a7221c591f26b1f07511 data/twilightforest/advancements/progress_knights.json
+bfd3008351924af77edc7175f4cd1c1802ac8f3e data/twilightforest/advancements/progress_knights.json
 009a995c68868cfc2b984b8d4bfe79ca87c47037 data/twilightforest/advancements/progress_labyrinth.json
 d078b5b99da07b50478a0dd77a83bce1a6bc0c52 data/twilightforest/advancements/progress_lich.json
 6ab977ea4aaf08372c090ecd06897a83f66ded39 data/twilightforest/advancements/progress_merge.json

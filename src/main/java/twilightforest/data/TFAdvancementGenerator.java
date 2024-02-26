@@ -140,9 +140,8 @@ public class TFAdvancementGenerator implements AdvancementProvider.AdvancementGe
 						null, AdvancementType.GOAL, true, true, false)
 				.addCriterion("all_knights", SimpleAdvancementTrigger.TriggerInstance.killAllPhantoms())
 				.addCriterion("trophy", InventoryChangeTrigger.TriggerInstance.hasItems(TFBlocks.KNIGHT_PHANTOM_TROPHY.get()))
-				.addCriterion("was_in_fight", HurtBossTrigger.TriggerInstance.hurtBoss(EntityPredicate.Builder.entity().of(TFEntities.KNIGHT_PHANTOM.get())))
 				.addCriterion("previous_progression", this.advancementTrigger(trophy_pedestal))
-				.requirements(new CountRequirementsStrategy(3, 1))
+				.requirements(new CountRequirementsStrategy(2, 1))
 				.save(consumer, "twilightforest:progress_knights");
 
 		AdvancementHolder trap = Advancement.Builder.advancement().parent(knights).display(

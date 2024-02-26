@@ -92,9 +92,6 @@ public abstract class HydraPart extends TFPart<Hydra> {
 		boolean flag = this.getParent() != null && this.getParent().attackEntityFromPart(this, source, amount);
 		if (flag) {
 			this.gameEvent(GameEvent.ENTITY_DAMAGE);
-			if (source.getEntity() != null) {
-				this.getParent().maybeAddQualifiedPlayer(source.getEntity());
-			}
 		}
 		return flag;
 	}
