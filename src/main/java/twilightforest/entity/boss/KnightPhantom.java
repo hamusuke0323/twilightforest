@@ -205,14 +205,13 @@ public class KnightPhantom extends BaseTFBoss {
 				//trigger criteria for killing every phantom in a group
 				if (cause.getEntity() instanceof ServerPlayer player) {
 					TFAdvancements.KILL_ALL_PHANTOMS.get().trigger(player);
+					for (ServerPlayer otherPlayer : this.level().getEntitiesOfClass(ServerPlayer.class, new AABB(treasurePos).inflate(32.0D))) {
+						TFAdvancements.KILL_ALL_PHANTOMS.get().trigger(otherPlayer);
+					}
 				}
 
 				// mark the stronghold as defeated
 				LandmarkUtil.markStructureConquered(this.level(), this, TFStructures.KNIGHT_STRONGHOLD, true);
-
-				for (ServerPlayer player : this.level().getEntitiesOfClass(ServerPlayer.class, new AABB(treasurePos).inflate(32.0D))) {
-					TFAdvancements.HURT_BOSS.get().trigger(player, this);
-				}
 			}
 		}
 	}
