@@ -1154,7 +1154,7 @@
   "misc.twilightforest.advancement_hidden": "＜隠された進捗＞",
   "misc.twilightforest.advancement_required": "前提進捗：",
   "misc.twilightforest.biome_locked": "バイオームはロックされています！",
-  "misc.twilightforest.biome_locked_2": "あなたの進捗を確認してください",
+  "misc.twilightforest.biome_locked_2": "進捗を確認してください",
   "misc.twilightforest.core_disabled": "設定により%sは無効になっています",
   "misc.twilightforest.firefly_spawner_radius": "ホタルのパーティクルの半径：%s ブロック",
   "misc.twilightforest.magic_map_fail": "魔法が弱まった。もしや、ここでは開けない？",
