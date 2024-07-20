@@ -2,6 +2,7 @@ package twilightforest.entity.projectile;
 
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -36,6 +37,12 @@ public class IceArrow extends TFArrow {
 	@Override
 	protected void onHitEntity(EntityHitResult result) {
 		super.onHitEntity(result);
+
+		// check pvp is allowed
+		if (this.getOwner() instanceof ServerPlayer attackerPlayer && result.getEntity() instanceof ServerPlayer target && !attackerPlayer.canHarmPlayer(target)) {
+			return;
+		}
+
 		if (!this.level().isClientSide() && result.getEntity() instanceof LivingEntity living) {
 			ChillAuraEnchantment.doChillAuraEffect(living, 200, 2, true);
 		}

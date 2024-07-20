@@ -1,6 +1,7 @@
 package twilightforest.item;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
@@ -16,38 +17,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IceSwordItem extends SwordItem {
 
-	public IceSwordItem(Tier toolMaterial, Properties properties) {
-		super(toolMaterial, 3, -2.4F, properties);
-	}
+    public IceSwordItem(Tier toolMaterial, Properties properties) {
+        super(toolMaterial, 3, -2.4F, properties);
+    }
 
-	@Override
-	public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
-		AtomicBoolean badEnchant = new AtomicBoolean();
-		EnchantmentHelper.getEnchantments(book).forEach((enchantment, integer) -> {
-			if (Objects.equals(Enchantments.FIRE_ASPECT, enchantment)) {
-				badEnchant.set(true);
-			}
-		});
+    @Override
+    public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
+        AtomicBoolean badEnchant = new AtomicBoolean();
+        EnchantmentHelper.getEnchantments(book).forEach((enchantment, integer) -> {
+            if (Objects.equals(Enchantments.FIRE_ASPECT, enchantment)) {
+                badEnchant.set(true);
+            }
+        });
 
-		return !badEnchant.get();
-	}
+        return !badEnchant.get();
+    }
 
-	@Override
-	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-		return !Enchantments.FIRE_ASPECT.equals(enchantment) && super.canApplyAtEnchantingTable(stack, enchantment);
-	}
+    @Override
+    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+        return !Enchantments.FIRE_ASPECT.equals(enchantment) && super.canApplyAtEnchantingTable(stack, enchantment);
+    }
 
-	@Override
-	public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-		boolean result = super.hurtEnemy(stack, target, attacker);
+    @Override
+    public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+        boolean result = super.hurtEnemy(stack, target, attacker);
 
-		if (result) {
-			ChillAuraEnchantment.doChillAuraEffect(target, 200, 2, true);
-			for (int i = 0; i < 20; i++) {
-				((ServerLevel) target.level()).sendParticles(TFParticleType.SNOW.get(), target.getX(), target.getY() + target.getBbHeight() * 0.5F, target.getZ(), 1, target.getBbWidth() * 0.5, target.getBbHeight() * 0.5, target.getBbWidth() * 0.5, 0);
-			}
-		}
+        if (result) {
+            // check pvp is allowed
+            if (attacker instanceof ServerPlayer attackerPlayer && target instanceof ServerPlayer targetPlayer && !attackerPlayer.canHarmPlayer(targetPlayer)) {
+                return true;
+            }
 
-		return result;
-	}
+            ChillAuraEnchantment.doChillAuraEffect(target, 200, 2, true);
+            for (int i = 0; i < 20; i++) {
+                ((ServerLevel) target.level()).sendParticles(TFParticleType.SNOW.get(), target.getX(), target.getY() + target.getBbHeight() * 0.5F, target.getZ(), 1, target.getBbWidth() * 0.5, target.getBbHeight() * 0.5, target.getBbWidth() * 0.5, 0);
+            }
+        }
+
+        return result;
+    }
 }

@@ -1,5 +1,6 @@
 package twilightforest.enchantment;
 
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
@@ -18,61 +19,68 @@ import twilightforest.init.TFMobEffects;
 
 public class ChillAuraEnchantment extends LootOnlyEnchantment {
 
-	public ChillAuraEnchantment(Rarity rarity) {
-		super(rarity, EnchantmentCategory.ARMOR, new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-				EquipmentSlot.LEGS, EquipmentSlot.FEET});
-	}
+    public ChillAuraEnchantment(Rarity rarity) {
+        super(rarity, EnchantmentCategory.ARMOR, new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS, EquipmentSlot.FEET});
+    }
 
-	@Override
-	public boolean canEnchant(ItemStack stack) {
-		return stack.getItem() instanceof ArmorItem || super.canEnchant(stack);
-	}
+    @Override
+    public boolean canEnchant(ItemStack stack) {
+        return stack.getItem() instanceof ArmorItem || super.canEnchant(stack);
+    }
 
-	@Override
-	public int getMinCost(int level) {
-		return 5 + (level - 1) * 9;
-	}
+    @Override
+    public int getMinCost(int level) {
+        return 5 + (level - 1) * 9;
+    }
 
-	@Override
-	public int getMaxCost(int level) {
-		return this.getMinCost(level) + 15;
-	}
+    @Override
+    public int getMaxCost(int level) {
+        return this.getMinCost(level) + 15;
+    }
 
-	@Override
-	public int getMaxLevel() {
-		return 3;
-	}
+    @Override
+    public int getMaxLevel() {
+        return 3;
+    }
 
-	@Override
-	public void doPostHurt(LivingEntity user, Entity attacker, int level) {
-		if (attacker instanceof LivingEntity entity) {
-			doChillAuraEffect(entity, 200, level - 1, this.shouldHit(level, user.getRandom()));
-		}
-	}
+    @Override
+    public void doPostHurt(LivingEntity user, Entity attacker, int level) {
+        // check pvp is allowed
+        if (user instanceof ServerPlayer player && attacker instanceof ServerPlayer victim && !player.canHarmPlayer(victim)) {
+            return;
+        }
 
-	public static void doChillAuraEffect(LivingEntity victim, int duration, int amplifier, boolean shouldHit) {
-		if (shouldHit && !victim.getType().is(EntityTypeTags.FREEZE_IMMUNE_ENTITY_TYPES)) {
-			if (!victim.getItemBySlot(EquipmentSlot.HEAD).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
-					!victim.getItemBySlot(EquipmentSlot.CHEST).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
-					!victim.getItemBySlot(EquipmentSlot.LEGS).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
-					!victim.getItemBySlot(EquipmentSlot.FEET).is(ItemTags.FREEZE_IMMUNE_WEARABLES)) {
-				if (!(victim instanceof Player player) || !player.isCreative()) {
-					victim.addEffect(new MobEffectInstance(TFMobEffects.FROSTY.get(), duration, amplifier));
-				}
-			}
-		}
-	}
+        if (attacker instanceof LivingEntity entity) {
+            doChillAuraEffect(entity, 200, level - 1, this.shouldHit(level, user.getRandom()));
+        }
+    }
 
-	private boolean shouldHit(int level, RandomSource pRnd) {
-		if (level <= 0) {
-			return false;
-		} else {
-			return pRnd.nextFloat() < 0.15F * (float) level;
-		}
-	}
+    public static void doChillAuraEffect(LivingEntity victim, int duration, int amplifier, boolean shouldHit) {
+        if (victim.level().isClientSide) return;
 
-	@Override
-	protected boolean checkCompatibility(Enchantment other) {
-		return super.checkCompatibility(other) && other != TFEnchantments.FIRE_REACT.get() && other != Enchantments.THORNS;
-	}
+        if (shouldHit && !victim.getType().is(EntityTypeTags.FREEZE_IMMUNE_ENTITY_TYPES)) {
+            if (!victim.getItemBySlot(EquipmentSlot.HEAD).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
+                    !victim.getItemBySlot(EquipmentSlot.CHEST).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
+                    !victim.getItemBySlot(EquipmentSlot.LEGS).is(ItemTags.FREEZE_IMMUNE_WEARABLES) &&
+                    !victim.getItemBySlot(EquipmentSlot.FEET).is(ItemTags.FREEZE_IMMUNE_WEARABLES)) {
+                if (!(victim instanceof Player player) || !player.isCreative()) {
+                    victim.addEffect(new MobEffectInstance(TFMobEffects.FROSTY.get(), duration, amplifier));
+                }
+            }
+        }
+    }
+
+    private boolean shouldHit(int level, RandomSource pRnd) {
+        if (level <= 0) {
+            return false;
+        } else {
+            return pRnd.nextFloat() < 0.15F * (float) level;
+        }
+    }
+
+    @Override
+    protected boolean checkCompatibility(Enchantment other) {
+        return super.checkCompatibility(other) && other != TFEnchantments.FIRE_REACT.get() && other != Enchantments.THORNS;
+    }
 }
